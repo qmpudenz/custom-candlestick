@@ -1,0 +1,75 @@
+#noDataMessage {
+    padding: 50px;
+    background: rgb(29 29 29 / 85%);
+    color: white;
+    font-family: 'circular';
+    display: none; 
+    position: absolute; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
+    z-index: 999; 
+    border-radius: 5px;
+  }
+
+  #closeMessage {
+    top: 5px;
+    right: 5px;
+    position: fixed;
+    color: white;
+    background: transparent;
+    border: 2px solid white;
+    border-radius: 4px;
+    font-family: sans-serif;
+  }
+
+  #closeMessage:hover {
+    cursor: pointer;
+  }
+
+  #chartWrapper {
+    display: flex;
+    justify-content: center;
+  }
+
+  #menuBar {
+    display: flex;
+    justify-content: center;
+    margin: 20px;
+    margin-top: 40px;
+  }
+
+  #main {
+    width: 90%;
+    height: 600px;
+    justify-content: center;
+    border: black solid 5px;
+    border-radius: 8px;
+  }
+
+  .selector {
+    border: solid 3px;
+    padding: 8px;
+    margin: 8px;
+    border-radius: 5px;
+    font-size: 20px;
+    cursor:pointer;
+    text-align: center;
+  }
+
+  #fetchData {
+    color: white;
+  border: solid 3px;
+  padding: 0 16px;
+  margin: 8px;
+  border-radius: 5px;
+  font-size: 20px;
+  background: black;
+  border-color: black;
+  }
+
+  #fetchData:hover {
+  background: rgb(29 29 29 / 85%);
+  border-color: black;
+  cursor:pointer;
+  }

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Currency Candlestick</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/luxon/2.3.0/luxon.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.2/echarts.min.js"></script>
+</head>
+
+<body>
+  
+  <div id="menuBar"> <!-- Main application UI elements -->
+  
+    <select id="traderTable" class="selector"> <!-- Select options for time interval -->
+      <option value="trader_M1">1 Minute</option>
+      <option value="trader_M5">5 Minutes</option>
+      <option value="trader_M15">15 Minutes</option>
+      <option value="trader_H1" selected>1 Hour</option>
+      <option value="trader_H4">4 Hours</option>
+      <option value="trader_D">1 Day</option>
+      <option value="trader_W">1 Week</option>
+      <option value="trader_M">1 Month</option>
+    </select>
+    
+    <select id="currency" class="selector"></select> <!-- Select options for currency pairs -->
+
+    <button id="fetchData">Fetch Data</button> <!-- Button for fetching new data -->
+  </div>
+  
+  <div id="chartWrapper">
+   
+    <div id="main"></div> <!-- Container for the chart -->
+    <!-- Container for displaying the message when there is no data available -->
+    <div id="noDataMessage">
+      No line data available for this selection.
+      <button id="closeMessage">X</button>
+    </div>
+  </div>
+  
+  <script>
+    // Register click event on the fetch button to request and draw new data
+    document.getElementById('fetchData').addEventListener('click', () => {
+      const traderTable = document.getElementById('traderTable').value;
+      const currency = document.getElementById('currency').value;
+      fetchDataAndDrawChart(traderTable, currency);
+    });
+
+    // Close the no data message when escape key is pressed
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        document.getElementById('noDataMessage').style.display = 'none';
+      }
+    });
+
+    // Close the no data message when the close button is clicked
+    document.getElementById('closeMessage').addEventListener('click', () => {
+      document.getElementById('noDataMessage').style.display = 'none';
+    });
+
+
+    // Declare and initialize global variables
+    const { DateTime } = luxon;
+    let chartData;
+    let signalData;
+
+    // Define a function to find the closest date in the candlestick data to a given date
+    function findCandlestickForDate(targetDate, candlestickData) {
+      let closestCandlestick = candlestickData[0];
+      let closestTimeDifference = Math.abs(new Date(closestCandlestick.date) - targetDate);
+
+      candlestickData.forEach(candlestick => {
+        let currentCandlestickDate = new Date(candlestick.date);
+        let currentTimeDifference = Math.abs(currentCandlestickDate - targetDate);
+
+        if(currentTimeDifference < closestTimeDifference) {
+          closestCandlestick = candlestick;
+          closestTimeDifference = currentTimeDifference;
+        }
+      });
+
+      return closestCandlestick;
+    }
+
+    // Function to fetch data from the API and draw the chart
+    async function fetchDataAndDrawChart(traderTable, currency) {
+      // The function will show a loading message while the fetch operation is in progress
+      myChart.showLoading({
+        text: 'Loading...',
+        textColor: '#000',
+        maskColor: 'rgba(255, 255, 255, 0.8)',
+        zlevel: 0
+      });
+
+      try {
+        // Then it will fetch the candlestick and signals data, show a no data message if necessary
+        const response = await fetch(`http://localhost:3002/data/${traderTable}/${currency}`);
+        data = await response.json();
+        const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}`);
+        signalData = await signalResponse.json();
+
+        if (signalData.length === 0) {
+          // If there is no line data, show the message
+          document.getElementById('noDataMessage').style.display = 'block';
+        } else {
+          // If there is line data, hide the message
+          document.getElementById('noDataMessage').style.display = 'none';
+        }
+
+        // Then it will fetch the indicator data
+        const indicatorResponse = await fetch('http://localhost:3002/ind_signal');
+        const indicatorData = await indicatorResponse.json();
+
+        // It converts the fetched candlestick data to the format used by the chart
+        chartData = data.map(row => {
+          const date_candle_started = row[0];
+          const low = row[1];
+          const open = row[2];
+          const close = row[3];
+          const high = row[4];
+          return {date: date_candle_started, values: [open, close, low, high]};
+        });
+
+        const getIndicatorById = (id) => {
+          const indicator = indicatorData.find(ind => ind.id === id);
+          return indicator ? indicator.ind_signal : null;
+        }
+
+        // Then it creates the mark line data for the chart
+        let markLineData = signalData.map(signal => {
+          const [startDate, endDate, signalType, indicatorSource] = signal;
+          const indicator = getIndicatorById(signalType);
+
+          // Find the matching candlesticks for the start and end dates
+          const startCandlestick = findCandlestickForDate(new Date(startDate), chartData);
+          const endCandlestick = findCandlestickForDate(new Date(endDate), chartData);
+
+          // Find the index of the start and end candlesticks
+          const startIndex = chartData.findIndex(candlestick => candlestick.date === startCandlestick.date);
+          const endIndex = chartData.findIndex(candlestick => candlestick.date === endCandlestick.date);
+
+          let lineColor;
+          switch (indicator) {
+            case 'BUY':
+            case 'BUY SOON':
+              lineColor = 'green';
+              break;
+            case 'SELL':
+            case 'SELL SOON':
+              lineColor = 'red';
+              break;
+            default:
+              lineColor = 'blue';
+              break;
+          }
+
+          return [
+            {
+              name: 'start',
+              symbol: 'circle',
+              symbolSize: 7,
+              coord: [startIndex, startCandlestick.values[1]],
+              label: {
+                  formatter: '',
+                  position: 'start'
+              },
+              lineStyle: {
+                  color: lineColor
+              },
+              tooltip: {
+                formatter: function () {
+                  const startFormattedDate = DateTime.fromISO(startDate).setZone('America/Chicago').toFormat('MM-dd-yyyy HH:mm');
+                  const endFormattedDate = DateTime.fromISO(endDate).setZone('America/Chicago').toFormat('MM-dd-yyyy HH:mm');
+                  return 'Signal Source: ' + indicatorSource + '<br />' + indicator + ': ' + startFormattedDate + " to " +  endFormattedDate;
+                }
+              }
+            }, 
+            {
+              name: 'end',
+              coord: [endIndex, endCandlestick.values[1]],
+              symbol: 'circle',
+              symbolSize: 7,
+              tooltip: {
+                formatter: function () {
+                  const endFormattedDate = DateTime.fromISO(endDate).setZone('America/Chicago').toFormat('MM-dd-yyyy HH:mm');
+                  return 'End: ' + endFormattedDate; 
+                }
+              }
+            }
+          ];
+        });
+
+        myChart.hideLoading();
+        // And finally it draws the chart
+        drawChart(markLineData);
+      } catch(error) {
+        console.error('Error fetching data:', error);
+        myChart.hideLoading();
+      }
+    }
+
+    // Initialize the chart
+    var myChart = echarts.init(document.getElementById('main'));
+    window.addEventListener('resize', function() {
+        myChart.resize();
+    });
+
+    // Function to draw the chart. The chart will display the fetched candlestick data and signal lines.
+    function drawChart(markLineData) {
+      const option = {
+        tooltip: {
+        trigger: 'item',
+        axisPointer: {
+            type: 'cross'
+        },
+        formatter: function (params) {
+        var date = DateTime.fromISO(chartData[params.dataIndex].date).setZone('America/Chicago');
+        var formattedDate = date.toFormat('M-dd-yy H:mm');
+        return formattedDate + '<br/>' +
+            'Open: ' + params.value[1] + '<br/>' +
+            'Close: ' + params.value[2] + '<br/>' +
+            'Lowest: ' + params.value[3] + '<br/>' +
+            'Highest: ' + params.value[4];
+        }
+        },
+
+        dataZoom: [{
+          type: 'inside',
+          start: 90, // Display last 10% of data
+          end: 100
+        }],
+        xAxis: {
+          type: 'category',
+          data: chartData.map(candlestick => {
+            return DateTime.fromISO(candlestick.date).setZone('America/Chicago').toFormat('M-dd-yy H:mm');
+          }),
+        },
+
+        yAxis: {
+          scale: true
+        },
+        series: [
+          {
+            type: 'candlestick',
+            data: chartData.map(candlestick => candlestick.values),
+            itemStyle: {
+              color: '#009129',
+              color0: '#d50000',
+              borderColor: '#009129',
+              borderColor0: '#d50000'
+            },
+
+            markLine: {
+              showSymbol: true,
+              symbol: 'circle', // specify the shape of symbol, optional
+              symbolSize: 8, // increase the symbol size
+              connectNulls: true,
+              data: markLineData,
+              lineStyle: {
+              width: 4, // you may want to increase line width as well
+              color: '#0000FF',
+              type: 'solid'
+            }
+            }
+          },
+        ]
+      };
+      myChart.setOption(option);
+    }
+
+    // Function to fetch the list of available currency pairs
+    async function fetchIndicators(successCallback, errorCallback) {
+      try {
+        const response = await fetch('http://localhost:3002/currency');
+        const data = await response.json();
+        successCallback(data);
+      } catch(error) {
+        errorCallback(error);
+      }
+    }
+
+
+    // Fetch the available currency pairs and populate the currency select element when the page loads
+    window.onload = () => {
+      fetchIndicators(
+        (currencyData) => {  
+          const currencySelect = document.getElementById('currency');
+          currencySelect.innerHTML = '';
+          let firstOption = null;
+          currencyData.forEach(([id, currency_name]) => {
+            // Check if the currency name contains an underscore, indicating it's a pair
+            if (currency_name.includes('_')) {
+              const option = document.createElement('option');
+              option.value = id;
+              // Replace the underscore with a slash for a better display
+              option.textContent = currency_name.replace('_', '/');
+              currencySelect.appendChild(option);
+              // Check if this is the first valid option we've added
+              if (!firstOption) {
+                firstOption = option;
+              }
+            }
+          });
+          // If there's at least one option, select it
+          if (firstOption) {
+            firstOption.selected = true;
+          }
+          // Fetch data for the first option
+          const firstCurrency = firstOption ? firstOption.value : null;
+          fetchDataAndDrawChart('trader_H1', firstCurrency); // replace 'trader_H1' with your initial traderTable value
+        },
+        (error) => {
+          console.error('An error occurred:', error);
+        }
+      );
+    };
+  </script>
+</body>
+</html>
