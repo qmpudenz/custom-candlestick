@@ -15,9 +15,9 @@ app.use((req, res, next) => {
 app.use(express.static('public'));
 
 // Define a GET route to fetch data from the server for a specific trader table and currency
-app.get('/data/:traderTable/:currency', (req, res) => {
-  const { traderTable, currency } = req.params;
-  fetchData(traderTable, currency, data => {
+app.get('/data/:traderTable/:currency/:startDate/:endDate', (req, res) => {
+  const { traderTable, currency, startDate, endDate } = req.params;
+  fetchData(traderTable, currency, startDate, endDate, data => {
     res.json(data);
   }, error => {
     console.error(error);
@@ -26,9 +26,9 @@ app.get('/data/:traderTable/:currency', (req, res) => {
 });
 
 // Define a GET route to fetch signals from the server for a specific trader table and currency
-app.get('/nashsignals/:traderTable/:currency', (req, res) => {
-  const { traderTable, currency } = req.params;
-  fetchSignals(traderTable, currency, data => {
+app.get('/nashsignals/:traderTable/:currency/:startDate/:endDate', (req, res) => {
+  const { traderTable, currency, startDate, endDate } = req.params;
+  fetchSignals(traderTable, currency, startDate, endDate, data => {
     res.json(data);
   }, error => {
     console.error(error);
@@ -55,6 +55,8 @@ app.get('/currency', (req, res) => {
     res.status(500).send('Internal Server Error');
   });
 });
+
+
 
 // Start the server on port 3002
 app.listen(3002, () => {

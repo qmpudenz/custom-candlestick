@@ -29,10 +29,11 @@ connection.connect((error) => {
 
 // Function to fetch candlestick data from the database
 // Define a function 'fetchData'. This function accepts four parameters: the traderTable name, the currency to filter, a successCallback function, and an errorCallback function.
-function fetchData(traderTable, currency, successCallback, errorCallback) {
-  // Execute a query on the MySQL database connection. The query fetches date_candle_started, open, high, low, and close fields from the traderTable where the currency matches the given 'currency', ordered by date_candle_started in ascending order.
-  connection.query(`SELECT date_candle_started, open, high, low, close FROM ${traderTable} WHERE currency = '${currency}' ORDER BY date_candle_started ASC`, function (error, results) {
-    // If there is an error with the query, call the errorCallback function with the error.
+function fetchData(traderTable, currency, startDate, endDate, successCallback, errorCallback) {
+  const query = `SELECT date_candle_started, open, high, low, close FROM ${traderTable} WHERE currency = ? AND date_candle_started BETWEEN ? AND ? ORDER BY date_candle_started ASC`;
+  const values = [currency, startDate, endDate];
+
+  connection.query(query, values, function (error, results) {
     if (error) {
       errorCallback(error);
     } else {
@@ -48,26 +49,25 @@ function fetchData(traderTable, currency, successCallback, errorCallback) {
 }
 
 
-// Function to fetch signal data from the database
-// Define a function 'fetchSignals'. This function accepts four parameters: the traderTable name, the currency to filter, a successCallback function, and an errorCallback function.
-function fetchSignals(traderTable, currency, successCallback, errorCallback) {
-  // Execute a query on the MySQL database connection. The query fetches all fields (*) from the NashSignals table where the currency_id matches the given 'currency', ordered by date_started in ascending order.
-  connection.query(`SELECT * FROM NashSignals WHERE currency_id = '${currency}' ORDER BY date_started ASC`, function (error, results) {
-    // If there is an error with the query, call the errorCallback function with the error.
+function fetchSignals(traderTable, currency, startDate, endDate, successCallback, errorCallback) {
+  const query = `SELECT NashSignals.*, ind_signal.ind_signal FROM NashSignals JOIN ind_signal ON NashSignals.signal_type = ind_signal.id WHERE currency_id = ? AND date_started BETWEEN ? AND ? ORDER BY date_started ASC`;
+  const values = [currency, startDate, endDate];
+
+  connection.query(query, values, function (error, results) {
     if (error) {
       errorCallback(error);
     } else {
-      // If there is no error, transform the results into formattedData. Each row is mapped into a new array containing a new Date object created from date_started, a new Date object created from date_ended, signal_type, and indicatorSource.
       const formattedData = results.map(row => {
-        const { date_started, date_ended, signal_type, indicator } = row;
-        const indicatorSource = indicator;
+        const { date_started, date_ended, indicator, ind_signal } = row;
+        const indicatorSource = ind_signal;
+        const signal_type = indicator;
         return [new Date(date_started), new Date(date_ended), signal_type, indicatorSource];
       });
-      // After formatting the data, call the successCallback function with the formattedData as the argument.
       successCallback(formattedData);
     }
   });
 }
+
 
 
 // Function to fetch indicator data from the database

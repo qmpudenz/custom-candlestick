@@ -11,8 +11,19 @@
 </head>
 
 <body>
+  <div>
+    <label for="startDate">Start Date:</label>
+    <input type="date" id="startDate" name="startDate">
+  
+    <label for="endDate">End Date:</label>
+    <input type="date" id="endDate" name="endDate">
+  
+    <button id="updateDateRange">Update Date Range</button>
+  </div>
+  
   
   <div id="menuBar"> <!-- Main application UI elements -->
+    
   
     <select id="traderTable" class="selector"> <!-- Select options for time interval -->
       <option value="trader_M1">1 Minute</option>
@@ -26,6 +37,10 @@
     </select>
     
     <select id="currency" class="selector"></select> <!-- Select options for currency pairs -->
+
+    <select id="indicator-dropdown" class="selector"></select>
+
+    <select id="indicatorFilter" class="selector"></select> <!-- Select options for indicators -->
 
     <button id="fetchData">Fetch Data</button> <!-- Button for fetching new data -->
   </div>
@@ -41,12 +56,21 @@
   </div>
   
   <script>
-    // Register click event on the fetch button to request and draw new data
-    document.getElementById('fetchData').addEventListener('click', () => {
-      const traderTable = document.getElementById('traderTable').value;
-      const currency = document.getElementById('currency').value;
-      fetchDataAndDrawChart(traderTable, currency);
-    });
+
+
+
+
+
+
+// Register click event on the fetch button to request and draw new data
+document.getElementById('fetchData').addEventListener('click', () => {
+  const traderTable = document.getElementById('traderTable').value;
+  const currency = document.getElementById('currency').value;
+  const indicator = document.getElementById('indicator-dropdown').value;
+  const filterIndicator = document.getElementById('indicatorFilter').value;
+  fetchDataAndDrawChart(traderTable, currency, indicator, filterIndicator);
+});
+
 
     // Close the no data message when escape key is pressed
     document.addEventListener('keydown', (event) => {
@@ -84,8 +108,9 @@
       return closestCandlestick;
     }
 
-    // Function to fetch data from the API and draw the chart
-    async function fetchDataAndDrawChart(traderTable, currency) {
+
+  // Function to fetch data from the API and draw the chart
+  async function fetchDataAndDrawChart(traderTable, currency, indicator, filterIndicator) {
       // The function will show a loading message while the fetch operation is in progress
       myChart.showLoading({
         text: 'Loading...',
@@ -93,13 +118,20 @@
         maskColor: 'rgba(255, 255, 255, 0.8)',
         zlevel: 0
       });
+    // Fetch start and end date from date inputs
+    let startDate = document.getElementById('startDate').value;
+    let endDate = document.getElementById('endDate').value;
 
+    
       try {
         // Then it will fetch the candlestick and signals data, show a no data message if necessary
-        const response = await fetch(`http://localhost:3002/data/${traderTable}/${currency}`);
+        const response = await fetch(`http://localhost:3002/data/${traderTable}/${currency}/${startDate}/${endDate}`);
         data = await response.json();
-        const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}`);
+        const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
         signalData = await signalResponse.json();
+
+      
+
 
         if (signalData.length === 0) {
           // If there is no line data, show the message
@@ -112,6 +144,7 @@
         // Then it will fetch the indicator data
         const indicatorResponse = await fetch('http://localhost:3002/ind_signal');
         const indicatorData = await indicatorResponse.json();
+       
 
         // It converts the fetched candlestick data to the format used by the chart
         chartData = data.map(row => {
@@ -127,10 +160,30 @@
           const indicator = indicatorData.find(ind => ind.id === id);
           return indicator ? indicator.ind_signal : null;
         }
+        document.getElementById("updateDateRange").addEventListener("click", updateDateRange);
+        function updateDateRange() {
+  const startDateInput = document.getElementById('startDate').value;
+  const endDateInput = document.getElementById('endDate').value;
+
+  if (startDateInput && endDateInput) {
+  startDate = startDateInput;
+  endDate = endDateInput;
+
+    // Display success message or do something
+    console.log(`Date range updated: ${startDate} to ${endDate}`);
+  } else {
+    // Handle error: both inputs should be filled
+    console.log('Please fill both date inputs');
+  }
+  
+  fetchDataAndDrawChart(traderTable, currency, indicator, filterIndicator);
+  populateIndicatorDropdown(traderTable, currency, startDate, endDate);
+  populateIndicatorFilter(traderTable, currency, startDate, endDate);
+}
 
         // Then it creates the mark line data for the chart
         let markLineData = signalData.map(signal => {
-          const [startDate, endDate, signalType, indicatorSource] = signal;
+          const [startDate, endDate, indicatorSource, signalType] = signal;
           const indicator = getIndicatorById(signalType);
 
           // Find the matching candlesticks for the start and end dates
@@ -142,7 +195,7 @@
           const endIndex = chartData.findIndex(candlestick => candlestick.date === endCandlestick.date);
 
           let lineColor;
-          switch (indicator) {
+          switch (signalType) {
             case 'BUY':
             case 'BUY SOON':
               lineColor = 'green';
@@ -173,7 +226,7 @@
                 formatter: function () {
                   const startFormattedDate = DateTime.fromISO(startDate).setZone('America/Chicago').toFormat('MM-dd-yyyy HH:mm');
                   const endFormattedDate = DateTime.fromISO(endDate).setZone('America/Chicago').toFormat('MM-dd-yyyy HH:mm');
-                  return 'Signal Source: ' + indicatorSource + '<br />' + indicator + ': ' + startFormattedDate + " to " +  endFormattedDate;
+                  return 'Signal Source: ' + indicatorSource + '<br />' + signalType + ': ' + startFormattedDate + " to " +  endFormattedDate;
                 }
               }
             }, 
@@ -193,6 +246,9 @@
         });
 
         myChart.hideLoading();
+        if (filterIndicator && filterIndicator !== 'all') {
+    markLineData = markLineData.filter(data => data[0].tooltip.formatter().includes(filterIndicator));
+  }
         // And finally it draws the chart
         drawChart(markLineData);
       } catch(error) {
@@ -209,6 +265,13 @@
 
     // Function to draw the chart. The chart will display the fetched candlestick data and signal lines.
     function drawChart(markLineData) {
+      const selectedIndicator = document.getElementById('indicator-dropdown').value;
+
+      // Show all signals if 'All Signals' option is selected
+      if (selectedIndicator !== 'all') {
+        markLineData = markLineData.filter(data => data[0].tooltip.formatter().includes(selectedIndicator));  // filter the data
+      }
+      
       const option = {
         tooltip: {
         trigger: 'item',
@@ -280,42 +343,160 @@
         errorCallback(error);
       }
     }
+ 
+
+ 
 
 
-    // Fetch the available currency pairs and populate the currency select element when the page loads
-    window.onload = () => {
-      fetchIndicators(
-        (currencyData) => {  
-          const currencySelect = document.getElementById('currency');
-          currencySelect.innerHTML = '';
-          let firstOption = null;
-          currencyData.forEach(([id, currency_name]) => {
-            // Check if the currency name contains an underscore, indicating it's a pair
-            if (currency_name.includes('_')) {
-              const option = document.createElement('option');
-              option.value = id;
-              // Replace the underscore with a slash for a better display
-              option.textContent = currency_name.replace('_', '/');
-              currencySelect.appendChild(option);
-              // Check if this is the first valid option we've added
-              if (!firstOption) {
-                firstOption = option;
-              }
-            }
-          });
-          // If there's at least one option, select it
-          if (firstOption) {
-            firstOption.selected = true;
+
+
+    async function populateIndicatorDropdown(traderTable, currency, startDate, endDate) {
+  const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
+  const signalData = await signalResponse.json();
+  
+  // Add logging
+  console.log('Signal Data for Indicator Dropdown:', signalData);
+
+  // Populate 'indicator-dropdown'
+  const uniqueSignalSources = [...new Set(signalData.map(item => item[2]))];
+
+  // Add logging
+  console.log('Unique Signal Sources:', uniqueSignalSources);
+
+  const dropdown = document.getElementById('indicator-dropdown');
+  if (uniqueSignalSources.length > 0) {
+    dropdown.innerHTML = `<option value="all">All Signals</option>` + uniqueSignalSources.map(source => `<option value="${source}">${source}</option>`).join("");
+  } else {
+    dropdown.innerHTML = '<option value="">No line data</option>';
+  }
+}
+
+// Function to populate 'indicatorFilter'
+async function populateIndicatorFilter(traderTable, currency, startDate, endDate) {
+  const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
+  const signalData = await signalResponse.json();
+  
+  // Add logging
+  console.log('Signal Data for Indicator Filter:', signalData);
+
+  // Populate 'indicatorFilter'
+  const uniqueIndicators = [...new Set(signalData.map(item => item[3]))];  // assuming item[3] is the Buy/Sell indicator
+  
+  // Add logging
+  console.log('Unique Indicators:', uniqueIndicators);
+
+  const indicatorFilter = document.getElementById('indicatorFilter');
+  if (uniqueIndicators.length > 0) {
+    indicatorFilter.innerHTML = '<option value="all">All</option>' + uniqueIndicators.map(indicator => `<option value="${indicator}">${indicator}</option>`).join("");
+  } else {
+    indicatorFilter.innerHTML = '<option value="all">None</option>';
+  }
+}
+
+// Event listener for 'currency' change
+document.getElementById('currency').addEventListener('change', async () => {
+  const traderTable = document.getElementById('traderTable').value;
+  const currency = document.getElementById('currency').value;
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  populateIndicatorDropdown(traderTable, currency, startDate, endDate);
+  populateIndicatorFilter(traderTable, currency, startDate, endDate);
+});
+
+// This function will fetch new data based on the selected source and populate the 'indicatorFilter' dropdown
+async function populateIndicatorFilterBasedOnSource(traderTable, currency, startDate, endDate, source) {
+  const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
+  const signalData = await signalResponse.json();
+
+  let filteredSignalData;
+
+  // If source is "All Signals", include all signal data. Otherwise, filter the data based on the selected source.
+  if (source === 'all') {
+    filteredSignalData = signalData;
+  } else {
+    filteredSignalData = signalData.filter(item => item[2] === source); // assuming item[2] is the source
+  }
+
+  const uniqueIndicators = [...new Set(filteredSignalData.map(item => item[3]))]; // assuming item[3] is the Buy/Sell indicator
+  const indicatorFilter = document.getElementById('indicatorFilter');
+  if (uniqueIndicators.length > 0) {
+    indicatorFilter.innerHTML = '<option value="all">All</option>' + uniqueIndicators.map(indicator => `<option value="${indicator}">${indicator}</option>`).join("");
+  } else {
+    indicatorFilter.innerHTML = '<option value="all">All</option>';
+  }
+}
+
+
+// Event listener for 'indicator-dropdown' change
+document.getElementById('indicator-dropdown').addEventListener('change', async () => {
+  const traderTable = document.getElementById('traderTable').value;
+  const currency = document.getElementById('currency').value;
+  const source = document.getElementById('indicator-dropdown').value;
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  // Call the new function to populate 'indicatorFilter' based on the selected source
+  populateIndicatorFilterBasedOnSource(traderTable, currency, startDate, endDate, source);
+});
+
+
+   
+
+// Fetch the available currency pairs and populate the currency select element when the page loads
+window.onload = () => {
+  document.getElementById('startDate').value = '2023-04-01';
+  document.getElementById('endDate').value = '2023-05-23';
+  let startDate = document.getElementById('startDate').value;
+  let endDate = document.getElementById('endDate').value;
+  console.log(startDate)
+
+  // Fetch initial data and draw the chart
+  const traderTable = document.getElementById('traderTable').value;
+  const currency = document.getElementById('currency').value;
+
+  fetchIndicators(
+    async (currencyData) => {
+      const currencySelect = document.getElementById('currency');
+      currencySelect.innerHTML = '';
+      let firstOption = null;
+      currencyData.forEach(([id, currency_name]) => {
+        if (currency_name.includes('_')) {
+          const option = document.createElement('option');
+          option.value = id;
+          option.textContent = currency_name.replace('_', '/');
+          currencySelect.appendChild(option);
+          if (!firstOption) {
+            firstOption = option;
           }
-          // Fetch data for the first option
-          const firstCurrency = firstOption ? firstOption.value : null;
-          fetchDataAndDrawChart('trader_H1', firstCurrency); // replace 'trader_H1' with your initial traderTable value
-        },
-        (error) => {
-          console.error('An error occurred:', error);
         }
-      );
-    };
+      });
+
+      if (firstOption) {
+        firstOption.selected = true;
+        const traderTable = 'trader_H1'; // replace 'trader_H1' with your initial traderTable value
+        const currency = document.getElementById('currency').value;
+        const source = document.getElementById('indicator-dropdown').value;
+  
+        // Fetch initial data and draw the chart
+        fetchDataAndDrawChart(traderTable, currency, 'all', 'all');
+        populateIndicatorDropdown(traderTable, currency, startDate, endDate);
+          populateIndicatorFilter(traderTable, currency, startDate, endDate);
+          
+        const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
+        const signalData = await signalResponse.json();
+        if (signalData && signalData.length > 0) {
+          // Call event listener code here
+        }
+      } else {
+        console.log('No valid currency options found');
+      }
+    },
+    (error) => {
+      console.error('An error occurred:', error);
+    }
+  );
+};
+
+
   </script>
 </body>
 </html>
