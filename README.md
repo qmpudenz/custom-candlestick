@@ -35,4 +35,3 @@ You can select a currency and time interval from the dropdown menus, and click t
 # Troubleshooting
 
 If you have any issues with the application, please check the JavaScript console in your browser for any errors. You can also check the output of the Node.js server.
-
