@@ -83,8 +83,6 @@ function findCandlestickForDate(targetDate, candlestickData) {
 async function fetchDataAndDrawChart(
   traderTable,
   currency,
-  indicator,
-  filterIndicator,
   selectedSources,
   selectedFilters
 ) {
@@ -126,10 +124,6 @@ async function fetchDataAndDrawChart(
       document.getElementById("noDataMessage").style.display = "none";
     }
 
-    // Then it will fetch the indicator data
-    const indicatorResponse = await fetch("http://localhost:3002/ind_signal");
-    const indicatorData = await indicatorResponse.json();
-
     // It converts the fetched candlestick data to the format used by the chart
     chartData = data.map((row) => {
       const date_candle_started = row[0];
@@ -143,21 +137,9 @@ async function fetchDataAndDrawChart(
       };
     });
 
-    const getIndicatorById = (id) => {
-      const indicator = indicatorData.find((ind) => ind.id === id);
-      return indicator ? indicator.ind_signal : null;
-    };
-
     // Then it creates the mark line data for the chart
     let markLineData = signalData.map((signal) => {
-      const [
-        startDate,
-        endDate,
-        indicatorSource,
-        signalType,
-        filterIndicator,
-        sourceIndicator,
-      ] = signal;
+      const [startDate, endDate, indicatorSource, signalType] = signal;
 
       // Find the matching candlesticks for the start and end dates
       const startCandlestick = findCandlestickForDate(
@@ -255,7 +237,6 @@ async function fetchDataAndDrawChart(
     )
       .filter((checkbox) => checkbox.checked)
       .map((checkbox) => checkbox.value);
-    // let selectedSources = document.getElementById('indicator-checkbox-group').value;
     let selectedSources = Array.from(
       document
         .getElementById("indicator-checkbox-group")
