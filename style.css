@@ -73,3 +73,29 @@
   border-color: black;
   cursor:pointer;
   }
+
+  #indicator-checkbox-group {
+    border: solid;
+    padding: 8px;
+    margin: 8px;
+    font-family: sans-serif;
+    border-radius: 4px;
+    width: 30vw;
+    font-size: 18px;
+  }
+  #indicatorFilter-checkbox-group {
+    border: solid;
+    padding: 8px;
+    margin: 8px;
+    font-family: sans-serif;
+    border-radius: 4px;
+    width: 20vw;
+    font-size: 18px;
+  }
+
+  #menuBar2 {
+    display: flex;
+    justify-content: center;
+    margin: 20px;
+    margin-top: 40px;
+  }

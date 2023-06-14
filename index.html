@@ -38,12 +38,24 @@
     
     <select id="currency" class="selector"></select> <!-- Select options for currency pairs -->
 
-    <select id="indicator-dropdown" class="selector"></select>
 
-    <select id="indicatorFilter" class="selector"></select> <!-- Select options for indicators -->
 
-    <button id="fetchData">Fetch Data</button> <!-- Button for fetching new data -->
+
+
+    
   </div>
+  <div id="menuBar2">
+    <!-- This will replace the 'indicator-dropdown' -->
+    <div id="indicator-checkbox-group">
+      <!-- The checkboxes will be populated dynamically -->
+    </div>
+    
+    <!-- This will replace the 'indicatorFilter' -->
+    <div id="indicatorFilter-checkbox-group">
+      <!-- The checkboxes will be populated dynamically -->
+    </div>
+    <button id="fetchData">Fetch Data</button> <!-- Button for fetching new data -->
+        </div>
   
   <div id="chartWrapper">
    
@@ -58,18 +70,30 @@
   <script>
 
 
+    document.getElementById("updateDateRange").addEventListener("click", updateDateRange);
+            function updateDateRange() {
+      const startDateInput = document.getElementById('startDate').value;
+      const endDateInput = document.getElementById('endDate').value;
+
+      if (startDateInput && endDateInput) {
+      startDate = startDateInput;
+      endDate = endDateInput;
+
+        // Display success message or do something
+        console.log(`Date range updated: ${startDate} to ${endDate}`);
+      } else {
+        // Handle error: both inputs should be filled
+        console.log('Please fill both date inputs');
+      }
+      
+      fetchDataAndDrawChart(traderTable, currency, indicator, filterIndicator, selectedSources, selectedFilters);
+      populateIndicatorCheckboxGroup(traderTable, currency, startDate, endDate, selectedSources, selectedFilters);
+      populateIndicatorFilterCheckboxGroup(traderTable, currency, startDate, endDate, selectedSources, selectedFilters);
+    }
 
 
 
 
-// Register click event on the fetch button to request and draw new data
-document.getElementById('fetchData').addEventListener('click', () => {
-  const traderTable = document.getElementById('traderTable').value;
-  const currency = document.getElementById('currency').value;
-  const indicator = document.getElementById('indicator-dropdown').value;
-  const filterIndicator = document.getElementById('indicatorFilter').value;
-  fetchDataAndDrawChart(traderTable, currency, indicator, filterIndicator);
-});
 
 
     // Close the no data message when escape key is pressed
@@ -110,8 +134,10 @@ document.getElementById('fetchData').addEventListener('click', () => {
 
 
   // Function to fetch data from the API and draw the chart
-  async function fetchDataAndDrawChart(traderTable, currency, indicator, filterIndicator) {
-      // The function will show a loading message while the fetch operation is in progress
+  async function fetchDataAndDrawChart(traderTable, currency, indicator, filterIndicator, selectedSources, selectedFilters) {
+    console.log('Inside fetchDataAndDrawChart with:', traderTable, currency, selectedSources, selectedFilters);
+  
+    // The function will show a loading message while the fetch operation is in progress
       myChart.showLoading({
         text: 'Loading...',
         textColor: '#000',
@@ -160,31 +186,12 @@ document.getElementById('fetchData').addEventListener('click', () => {
           const indicator = indicatorData.find(ind => ind.id === id);
           return indicator ? indicator.ind_signal : null;
         }
-        document.getElementById("updateDateRange").addEventListener("click", updateDateRange);
-        function updateDateRange() {
-  const startDateInput = document.getElementById('startDate').value;
-  const endDateInput = document.getElementById('endDate').value;
-
-  if (startDateInput && endDateInput) {
-  startDate = startDateInput;
-  endDate = endDateInput;
-
-    // Display success message or do something
-    console.log(`Date range updated: ${startDate} to ${endDate}`);
-  } else {
-    // Handle error: both inputs should be filled
-    console.log('Please fill both date inputs');
-  }
-  
-  fetchDataAndDrawChart(traderTable, currency, indicator, filterIndicator);
-  populateIndicatorDropdown(traderTable, currency, startDate, endDate);
-  populateIndicatorFilter(traderTable, currency, startDate, endDate);
-}
+        
 
         // Then it creates the mark line data for the chart
         let markLineData = signalData.map(signal => {
-          const [startDate, endDate, indicatorSource, signalType] = signal;
-          const indicator = getIndicatorById(signalType);
+
+          const [startDate, endDate, indicatorSource, signalType, filterIndicator, sourceIndicator] = signal;
 
           // Find the matching candlesticks for the start and end dates
           const startCandlestick = findCandlestickForDate(new Date(startDate), chartData);
@@ -193,7 +200,6 @@ document.getElementById('fetchData').addEventListener('click', () => {
           // Find the index of the start and end candlesticks
           const startIndex = chartData.findIndex(candlestick => candlestick.date === startCandlestick.date);
           const endIndex = chartData.findIndex(candlestick => candlestick.date === endCandlestick.date);
-
           let lineColor;
           switch (signalType) {
             case 'BUY':
@@ -211,7 +217,8 @@ document.getElementById('fetchData').addEventListener('click', () => {
 
           return [
             {
-              name: 'start',
+              name: indicatorSource,  // Added indicatorSource here
+              signalType: signalType,  // Added signalType here
               symbol: 'circle',
               symbolSize: 7,
               coord: [startIndex, startCandlestick.values[1]],
@@ -243,14 +250,59 @@ document.getElementById('fetchData').addEventListener('click', () => {
               }
             }
           ];
-        });
+          });
+
+        console.log("Initial markLineData:", JSON.stringify(markLineData));
+        
 
         myChart.hideLoading();
-        if (filterIndicator && filterIndicator !== 'all') {
-    markLineData = markLineData.filter(data => data[0].tooltip.formatter().includes(filterIndicator));
-  }
+
+// Define the filters and sources
+let selectedFilters = Array.from(document.getElementById('indicatorFilter-checkbox-group').getElementsByTagName('input'))
+                      .filter(checkbox => checkbox.checked)
+                      .map(checkbox => checkbox.value);
+// let selectedSources = document.getElementById('indicator-checkbox-group').value;
+ let selectedSources = Array.from(document.getElementById('indicator-checkbox-group').getElementsByTagName('input'))
+                      .filter(checkbox => checkbox.checked)
+                      .map(checkbox => checkbox.value);
+
+console.log("Selected Filters: ", selectedFilters);
+console.log("Selected Sources: ", selectedSources);
+
+// Check if 'all' is selected in the filters
+if (selectedFilters.includes('all')) {
+  // If 'all' is selected, clear the selectedFilters
+  selectedFilters = [];
+}
+
+// Check if 'all' is selected in the sources
+if (selectedSources.includes('all')) {
+  // If 'all' is selected, clear the selectedSources
+  selectedSources = [];
+}
+
+// Filter the markLineData based on selectedFilters and selectedSources
+let markLineDataFiltered = markLineData;
+
+console.log("Pre-filtered markLineData: ", markLineDataFiltered);
+
+// Filter by source only if a specific source is selected
+if (selectedSources.length > 0) {
+  markLineDataFiltered = markLineDataFiltered.filter(data => selectedSources.includes(data[0].name));
+}
+
+console.log("Post-source filter markLineData: ", markLineDataFiltered);
+
+// Filter by filters only if specific filters are selected
+if (selectedFilters.length > 0) {
+  markLineDataFiltered = markLineDataFiltered.filter(data => selectedFilters.includes(data[0].signalType));
+}
+
+// console.log("Post-filters filter markLineData: ", markLineDataFiltered);
+
+
         // And finally it draws the chart
-        drawChart(markLineData);
+        drawChart(markLineDataFiltered);
       } catch(error) {
         console.error('Error fetching data:', error);
         myChart.hideLoading();
@@ -264,13 +316,15 @@ document.getElementById('fetchData').addEventListener('click', () => {
     });
 
     // Function to draw the chart. The chart will display the fetched candlestick data and signal lines.
-    function drawChart(markLineData) {
-      const selectedIndicator = document.getElementById('indicator-dropdown').value;
+    function drawChart(markLineDataFiltered) {
+      // const selectedSources = document.getElementById('indicator-checkbox-group').value;
+      let selectedSources = Array.from(document.getElementById('indicator-checkbox-group').getElementsByTagName('input'))
+                      .filter(checkbox => checkbox.checked)
+                      .map(checkbox => checkbox.value);
 
       // Show all signals if 'All Signals' option is selected
-      if (selectedIndicator !== 'all') {
-        markLineData = markLineData.filter(data => data[0].tooltip.formatter().includes(selectedIndicator));  // filter the data
-      }
+
+
       
       const option = {
         tooltip: {
@@ -320,7 +374,7 @@ document.getElementById('fetchData').addEventListener('click', () => {
               symbol: 'circle', // specify the shape of symbol, optional
               symbolSize: 8, // increase the symbol size
               connectNulls: true,
-              data: markLineData,
+              data: markLineDataFiltered,
               lineStyle: {
               width: 4, // you may want to increase line width as well
               color: '#0000FF',
@@ -347,51 +401,179 @@ document.getElementById('fetchData').addEventListener('click', () => {
 
  
 
+    let selectedSources = ['all'];  // Initialize with 'all' selected
+let selectedFilters = ['all'];  // Initialize with 'all' selected
 
 
-
-    async function populateIndicatorDropdown(traderTable, currency, startDate, endDate) {
+async function populateIndicatorCheckboxGroup(traderTable, currency, startDate, endDate) {
   const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
   const signalData = await signalResponse.json();
   
-  // Add logging
-  console.log('Signal Data for Indicator Dropdown:', signalData);
-
-  // Populate 'indicator-dropdown'
   const uniqueSignalSources = [...new Set(signalData.map(item => item[2]))];
+  const checkboxGroup = document.getElementById('indicator-checkbox-group');
+  checkboxGroup.innerHTML = '';
+  let allOption = document.createElement('input');
+  allOption.type = 'checkbox';
+  allOption.id = 'all';
+  allOption.name = 'all';  // Add name to the checkbox
+allOption.value = 'all'; // Add value to the checkbox
+allOption.checked = true;  // Set as checked by default
 
-  // Add logging
-  console.log('Unique Signal Sources:', uniqueSignalSources);
+  let allOptionLabel = document.createElement('label');
+  allOptionLabel.htmlFor = 'all';
+  allOptionLabel.appendChild(document.createTextNode('All'));
 
-  const dropdown = document.getElementById('indicator-dropdown');
-  if (uniqueSignalSources.length > 0) {
-    dropdown.innerHTML = `<option value="all">All Signals</option>` + uniqueSignalSources.map(source => `<option value="${source}">${source}</option>`).join("");
+  checkboxGroup.appendChild(allOption);
+  checkboxGroup.appendChild(allOptionLabel);
+  checkboxGroup.appendChild(document.createElement('br')); // Added line break here
+
+  uniqueSignalSources.forEach(source => {
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = source;
+    checkbox.value = source;
+    checkbox.id = `indicator-checkbox-${source}`;
+
+    const label = document.createElement('label');
+    label.htmlFor = `indicator-checkbox-${source}`;
+    label.appendChild(document.createTextNode(source));
+
+    checkboxGroup.appendChild(checkbox);
+    checkboxGroup.appendChild(label);
+    checkboxGroup.appendChild(document.createElement('br'));
+  });
+
+
+
+  checkboxGroup.addEventListener('change', function (event) {
+  // Get all the checked checkboxes
+  let checkedBoxes = Array.from(checkboxGroup.children).filter(child => child.nodeName === "INPUT" && child.checked);
+  
+  if (event.target.id === 'all') {
+    if (event.target.checked) {
+      // If "all" was checked, uncheck all other options
+      Array.from(checkboxGroup.children)
+        .filter(child => child !== event.target && child.nodeName === "INPUT")
+        .forEach(child => child.checked = false);
+    } else {
+      // If "all" was unchecked, and previously it was checked, check first available option
+      const firstAvailableCheckbox = Array.from(checkboxGroup.children)
+        .find(child => child !== event.target && child.nodeName === "INPUT");
+      if (firstAvailableCheckbox) {
+        firstAvailableCheckbox.checked = true;
+      }
+    }
   } else {
-    dropdown.innerHTML = '<option value="">No line data</option>';
+    if (event.target.checked) {
+      // If it was checked, uncheck "all"
+      checkboxGroup.children[0].checked = false;
+    } else {
+      // If it was unchecked, check if all others are also unchecked.
+      // If so, check "all"
+      const allUnchecked = Array.from(checkboxGroup.children)
+        .filter(child => child.nodeName === "INPUT")
+        .every(child => !child.checked);
+      if (allUnchecked) {
+        checkboxGroup.children[0].checked = true;
+      }
+    }
   }
-}
+  
+   // Update selectedSources with checked options, or with all options if 'all' is checked
+  selectedSources = checkedBoxes.map(box => box.value);
+  if (selectedSources.includes('all')) {
+    selectedSources = uniqueSignalSources;  // use all sources instead of ['all']
+  }
+
+});
+
+
+
+
+
+  };
+
 
 // Function to populate 'indicatorFilter'
-async function populateIndicatorFilter(traderTable, currency, startDate, endDate) {
+async function populateIndicatorFilterCheckboxGroup(traderTable, currency, startDate, endDate, sources) {
   const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
   const signalData = await signalResponse.json();
-  
-  // Add logging
-  console.log('Signal Data for Indicator Filter:', signalData);
 
-  // Populate 'indicatorFilter'
-  const uniqueIndicators = [...new Set(signalData.map(item => item[3]))];  // assuming item[3] is the Buy/Sell indicator
-  
-  // Add logging
-  console.log('Unique Indicators:', uniqueIndicators);
-
-  const indicatorFilter = document.getElementById('indicatorFilter');
-  if (uniqueIndicators.length > 0) {
-    indicatorFilter.innerHTML = '<option value="all">All</option>' + uniqueIndicators.map(indicator => `<option value="${indicator}">${indicator}</option>`).join("");
-  } else {
-    indicatorFilter.innerHTML = '<option value="all">None</option>';
+  console.log('sources:', sources); // Add this
+// Filter signalData based on selected sources
+let filteredSignalData = signalData;
+  if (sources && !sources.includes('all')) {
+    filteredSignalData = signalData.filter(item => sources.includes(item[2]));
   }
+
+  const uniqueIndicators = [...new Set(filteredSignalData.map(item => item[3]))];
+  const checkboxGroup = document.getElementById('indicatorFilter-checkbox-group');
+  checkboxGroup.innerHTML = '';
+    // Add an "all" option to the start of the checkbox list
+    let allOption = document.createElement('input');
+  allOption.type = 'checkbox';
+  allOption.id = 'allFilter';
+ allOption.name = 'all';  // Add name to the checkbox
+allOption.value = 'all'; // Add value to the checkbox
+allOption.checked = true;  // Set as checked by default
+
+  let allOptionLabel = document.createElement('label');
+  allOptionLabel.htmlFor = 'allFilter';
+  allOptionLabel.appendChild(document.createTextNode('All'));
+
+  checkboxGroup.appendChild(allOption);
+  checkboxGroup.appendChild(allOptionLabel);
+  checkboxGroup.appendChild(document.createElement('br')); // Added line break here
+  uniqueIndicators.forEach(indicator => {
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = indicator;
+    checkbox.value = indicator;
+    checkbox.id = `indicatorFilter-checkbox-${indicator}`;
+
+    const label = document.createElement('label');
+    label.htmlFor = `indicatorFilter-checkbox-${indicator}`;
+    label.appendChild(document.createTextNode(indicator));
+
+    checkboxGroup.appendChild(checkbox);
+    checkboxGroup.appendChild(label);
+    checkboxGroup.appendChild(document.createElement('br'));
+  });
+  checkboxGroup.addEventListener('change', function (event) {
+  // Get all the checked checkboxes
+  let checkedBoxes = Array.from(checkboxGroup.children).filter(child => child.nodeName === "INPUT" && child.checked);
+
+  // Update selectedFilters with checked options, or with all options if 'all' is checked
+  selectedFilters = checkedBoxes.map(box => box.value);
+  if (selectedFilters.includes('all')) {
+    selectedFilters = uniqueIndicators;  // use all indicators instead of ['all']
+  }
+});
+
 }
+
+// Event listener for 'indicator-checkbox-group' change
+document.getElementById('indicator-checkbox-group').addEventListener('change', async () => {
+  const checkboxes = document.getElementById('indicator-checkbox-group').getElementsByTagName('input');
+  
+  // Filter out the 'all' option if other checkboxes are selected
+  let selectedSources = Array.from(checkboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+  if (selectedSources.includes('all') && selectedSources.length > 1) {
+    selectedSources = selectedSources.filter(source => source !== 'all');
+  }
+  
+  console.log('Selected sources:', selectedSources); // Add this
+
+  const traderTable = document.getElementById('traderTable').value;
+  const currency = document.getElementById('currency').value;
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  
+  populateIndicatorFilterCheckboxGroup(traderTable, currency, startDate, endDate, selectedSources);
+});
+
+
+
 
 // Event listener for 'currency' change
 document.getElementById('currency').addEventListener('change', async () => {
@@ -399,44 +581,23 @@ document.getElementById('currency').addEventListener('change', async () => {
   const currency = document.getElementById('currency').value;
   const startDate = document.getElementById('startDate').value;
   const endDate = document.getElementById('endDate').value;
-  populateIndicatorDropdown(traderTable, currency, startDate, endDate);
-  populateIndicatorFilter(traderTable, currency, startDate, endDate);
+  populateIndicatorCheckboxGroup(traderTable, currency, startDate, endDate);
+  populateIndicatorFilterCheckboxGroup(traderTable, currency, startDate, endDate);
 });
 
-// This function will fetch new data based on the selected source and populate the 'indicatorFilter' dropdown
-async function populateIndicatorFilterBasedOnSource(traderTable, currency, startDate, endDate, source) {
-  const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
-  const signalData = await signalResponse.json();
+// Event listener for 'indicatorFilter-checkbox-group' change
+document.getElementById('indicatorFilter-checkbox-group').addEventListener('change', async () => {
+  const checkboxes = document.getElementById('indicatorFilter-checkbox-group').getElementsByTagName('input');
 
-  let filteredSignalData;
-
-  // If source is "All Signals", include all signal data. Otherwise, filter the data based on the selected source.
-  if (source === 'all') {
-    filteredSignalData = signalData;
-  } else {
-    filteredSignalData = signalData.filter(item => item[2] === source); // assuming item[2] is the source
+  // Filter out the 'all' option if other checkboxes are selected
+  selectedFilters = Array.from(checkboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+  if (selectedFilters.includes('all') && selectedFilters.length > 1) {
+    selectedFilters = selectedFilters.filter(filter => filter !== 'all');
   }
-
-  const uniqueIndicators = [...new Set(filteredSignalData.map(item => item[3]))]; // assuming item[3] is the Buy/Sell indicator
-  const indicatorFilter = document.getElementById('indicatorFilter');
-  if (uniqueIndicators.length > 0) {
-    indicatorFilter.innerHTML = '<option value="all">All</option>' + uniqueIndicators.map(indicator => `<option value="${indicator}">${indicator}</option>`).join("");
-  } else {
-    indicatorFilter.innerHTML = '<option value="all">All</option>';
-  }
-}
-
-
-// Event listener for 'indicator-dropdown' change
-document.getElementById('indicator-dropdown').addEventListener('change', async () => {
-  const traderTable = document.getElementById('traderTable').value;
-  const currency = document.getElementById('currency').value;
-  const source = document.getElementById('indicator-dropdown').value;
-  const startDate = document.getElementById('startDate').value;
-  const endDate = document.getElementById('endDate').value;
-  // Call the new function to populate 'indicatorFilter' based on the selected source
-  populateIndicatorFilterBasedOnSource(traderTable, currency, startDate, endDate, source);
+  
+  console.log('Selected indicator filters:', selectedFilters);
 });
+
 
 
    
@@ -473,19 +634,22 @@ window.onload = () => {
       if (firstOption) {
         firstOption.selected = true;
         const traderTable = 'trader_H1'; // replace 'trader_H1' with your initial traderTable value
+        document.getElementById('currency').value = 10;
         const currency = document.getElementById('currency').value;
-        const source = document.getElementById('indicator-dropdown').value;
+        
+        const source = document.getElementById('indicator-checkbox-group').value;
   
         // Fetch initial data and draw the chart
         fetchDataAndDrawChart(traderTable, currency, 'all', 'all');
-        populateIndicatorDropdown(traderTable, currency, startDate, endDate);
-          populateIndicatorFilter(traderTable, currency, startDate, endDate);
+        populateIndicatorCheckboxGroup(traderTable, currency, startDate, endDate);
+        populateIndicatorFilterCheckboxGroup(traderTable, currency, startDate, endDate);
           
-        const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
-        const signalData = await signalResponse.json();
-        if (signalData && signalData.length > 0) {
-          // Call event listener code here
-        }
+        // const signalResponse = await fetch(`http://localhost:3002/nashsignals/${traderTable}/${currency}/${startDate}/${endDate}`);
+        // const signalData = await signalResponse.json();
+        // if (signalData && signalData.length > 0) {
+        //   console.log('did i get here?', signalData)
+        //   // Call event listener code here
+        // }
       } else {
         console.log('No valid currency options found');
       }
@@ -495,6 +659,24 @@ window.onload = () => {
     }
   );
 };
+
+// Register click event on the fetch button to request and draw new data
+document.getElementById('fetchData').addEventListener('click', () => {
+  const traderTable = document.getElementById('traderTable').value;
+  const currency = document.getElementById('currency').value;
+
+  // For sources
+  const sourceCheckboxes = document.getElementById('indicator-checkbox-group').getElementsByTagName('input');
+  const selectedSources = Array.from(sourceCheckboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+
+  // For filters
+  const filterCheckboxes = document.getElementById('indicatorFilter-checkbox-group').getElementsByTagName('input');
+  const selectedFilters = Array.from(filterCheckboxes).filter(checkbox => checkbox.checked).map(checkbox => checkbox.value);
+
+  console.log('fetching new data, selectedSources, selectedFilters', selectedSources, selectedFilters);
+
+  fetchDataAndDrawChart(traderTable, currency, selectedSources, selectedFilters);
+});
 
 
   </script>
