@@ -11,46 +11,66 @@
   </head>
 
   <body>
-    <div>
-      <label for="startDate">Start Date:</label>
-      <input type="date" id="startDate" name="startDate" />
+    <div id="menu">
+      <div id="menuLeft">
+        <div id="upperMenu">
+          <select id="traderTable" class="selector">
+            <!-- Select options for time interval -->
+            <option value="trader_M1">1 Minute</option>
+            <option value="trader_M5">5 Minutes</option>
+            <option value="trader_M15">15 Minutes</option>
+            <option value="trader_H1" selected>1 Hour</option>
+            <option value="trader_H4">4 Hours</option>
+            <option value="trader_D">1 Day</option>
+            <option value="trader_W">1 Week</option>
+            <option value="trader_M">1 Month</option>
+          </select>
 
-      <label for="endDate">End Date:</label>
-      <input type="date" id="endDate" name="endDate" />
+          <select id="currency" class="selector"></select>
+          <!-- Select options for currency pairs -->
 
-      <button id="updateDateRange">Update Date Range</button>
-    </div>
+          <div id="rangeMenu">
+            <label class="dateLabel" for="startDate">Start:</label>
+            <input
+              class="dateInput"
+              type="datetime-local"
+              id="startDate"
+              name="startDate"
+            />
 
-    <div id="menuBar">
-      <!-- Main application UI elements -->
+            <label class="dateLabel" for="endDate">End:</label>
+            <input
+              class="dateInput"
+              type="datetime-local"
+              id="endDate"
+              name="endDate"
+            />
 
-      <select id="traderTable" class="selector">
-        <!-- Select options for time interval -->
-        <option value="trader_M1">1 Minute</option>
-        <option value="trader_M5">5 Minutes</option>
-        <option value="trader_M15">15 Minutes</option>
-        <option value="trader_H1" selected>1 Hour</option>
-        <option value="trader_H4">4 Hours</option>
-        <option value="trader_D">1 Day</option>
-        <option value="trader_W">1 Week</option>
-        <option value="trader_M">1 Month</option>
-      </select>
+            <button id="updateDateRange">Update Range</button>
+          </div>
+        </div>
 
-      <select id="currency" class="selector"></select>
-      <!-- Select options for currency pairs -->
-    </div>
-    <div id="menuBar2">
-      <!-- This will replace the 'indicator-dropdown' -->
-      <div id="indicator-checkbox-group">
-        <!-- The checkboxes will be populated dynamically -->
+        <div id="menuBar">
+          <!-- Main application UI elements -->
+          <div id="innerMenu">
+            <details>
+              <summary id="summaryLarge">Select Indicator Filters:</summary>
+              <div id="indicator-checkbox-group"></div>
+            </details>
+
+            <details>
+              <summary id="summarySmall">Select Buy/Sell Filters:</summary>
+              <div id="indicatorFilter-checkbox-group"></div>
+            </details>
+          </div>
+        </div>
       </div>
-
-      <!-- This will replace the 'indicatorFilter' -->
-      <div id="indicatorFilter-checkbox-group">
-        <!-- The checkboxes will be populated dynamically -->
+      <div id="menuRight">
+        <div>
+          <button id="fetchData">Fetch Data</button>
+          <!-- Button for fetching new data -->
+        </div>
       </div>
-      <button id="fetchData">Fetch Data</button>
-      <!-- Button for fetching new data -->
     </div>
 
     <div id="chartWrapper">
@@ -61,6 +81,9 @@
         No line data available for this selection.
         <button id="closeMessage">X</button>
       </div>
+    </div>
+    <div id="consoleContainer">
+      <div id="console"></div>
     </div>
 
     <script src="./script.js"></script>

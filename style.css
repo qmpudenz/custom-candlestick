@@ -1,8 +1,8 @@
 #noDataMessage {
   padding: 50px;
-  background: rgb(29 29 29 / 85%);
+  background: rgba(29, 29, 29, 0.85);
   color: white;
-  font-family: "circular";
+  font-family: circular;
   display: none;
   position: absolute;
   top: 50%;
@@ -34,68 +34,242 @@
 
 #menuBar {
   display: flex;
-  justify-content: center;
-  margin: 20px;
-  margin-top: 40px;
+  justify-content: space-evenly;
+  margin-bottom: 20px;
+  height: 50px;
+  align-items: baseline;
 }
 
 #main {
-  width: 90%;
+  width: 95vw;
   height: 600px;
   justify-content: center;
-  border: black solid 5px;
-  border-radius: 8px;
+  border: 9px solid rgb(230, 230, 230);
+  border-radius: 0px;
+  background-color: rgb(255, 254, 253);
+  min-width: 950px;
+  display: flex;
+  padding: 0px;
+  margin: 0;
 }
 
 .selector {
-  border: solid 3px;
+  border: 4px solid rgb(230, 230, 230);
   padding: 8px;
-  margin: 8px;
-  border-radius: 5px;
-  font-size: 20px;
+  margin: 5px;
+  font-size: 16px;
   cursor: pointer;
   text-align: center;
+  background: white;
+  height: 48px;
 }
 
 #fetchData {
   color: white;
-  border: solid 3px;
-  padding: 0 16px;
-  margin: 8px;
-  border-radius: 5px;
+  padding: 8px 24px;
+  margin: 4px;
   font-size: 20px;
-  background: black;
-  border-color: black;
+  background: rgba(0, 0, 0, 0.79);
+  height: 100px;
+  display: flex;
+  align-items: center;
 }
 
 #fetchData:hover {
-  background: rgb(29 29 29 / 85%);
+  background: rgba(29, 29, 29, 0.85);
   border-color: black;
   cursor: pointer;
 }
 
 #indicator-checkbox-group {
-  border: solid;
+  border: 4px solid rgb(230, 230, 230);
   padding: 8px;
-  margin: 8px;
   font-family: sans-serif;
-  border-radius: 4px;
-  width: 30vw;
+  min-width: 400px;
   font-size: 18px;
+  width: fit-content;
+  background: white;
+  min-height: 24px;
+  z-index: 5;
+  margin: 0px 8px;
+  height: fit-content;
+  position: relative;
 }
+
 #indicatorFilter-checkbox-group {
-  border: solid;
+  border: 4px solid rgb(230, 230, 230);
   padding: 8px;
-  margin: 8px;
   font-family: sans-serif;
-  border-radius: 4px;
-  width: 20vw;
+  min-width: 300px;
   font-size: 18px;
+  width: fit-content;
+  background: white;
+  min-height: 24px;
+  z-index: 5;
+  margin: 0px 8px;
+  height: fit-content;
+  position: relative;
 }
 
 #menuBar2 {
   display: flex;
   justify-content: center;
-  margin: 20px;
-  margin-top: 40px;
+  margin-bottom: 20px;
+}
+
+#indicator-checkbox-group.noData,
+#indicatorFilter-checkbox-group.noData {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  min-height: 72px;
+}
+
+#innerMenu {
+  display: flex;
+  justify-content: space-evenly;
+}
+
+body {
+  background: linear-gradient(to top, rgb(255, 255, 255), rgb(236, 233, 230));
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+#rangeMenu {
+  display: flex;
+  justify-content: center;
+  width: 600px;
+  margin-left: 8px;
+  align-items: center;
+  background: white;
+  border: 4px solid rgb(230, 230, 230);
+  padding: 4px;
+}
+
+details {
+  margin: 1em 0px;
+}
+
+summary {
+  background-color: rgb(230, 230, 230);
+  padding: 12px;
+  cursor: pointer;
+  margin: 0px 8px;
+  font-family: sans-serif;
+}
+
+#summaryLarge {
+  width: 400px;
+}
+
+#summarySmall {
+  width: 300px;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+summary::marker {
+  display: none;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: rgb(249, 249, 249);
+  min-width: 160px;
+  box-shadow: rgba(0, 0, 0, 0.2) 0px 8px 16px 0px;
+  padding: 12px 16px;
+  z-index: 1;
+}
+
+.dropdown-content label {
+  display: block;
+}
+
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+#menuRight {
+  display: flex;
+  align-items: center;
+  width: 15vw;
+  justify-content: left;
+  min-width: 150px;
+}
+
+#menuLeft {
+  display: flex;
+  flex-direction: column;
+  width: 80vw;
+  min-width: 800px;
+  max-width: 900px;
+}
+
+#upperMenu {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#menu {
+  display: flex;
+  justify-content: center;
+  margin: 0px;
+  width: 95vw;
+  min-width: 950px;
+  max-width: 1200px;
+}
+
+.dateLabel {
+  font-family: sans-serif;
+  margin-right: 6px;
+  margin-left: 4px;
+}
+
+.dateInput {
+  font-family: sans-serif;
+  margin-right: 16px;
+  padding: 4px;
+  font-size: 16px;
+  padding-left: 8px;
+  width: 175px;
+}
+
+#console {
+  font-size: 24px;
+  padding: 16px;
+}
+
+#consoleContainer {
+  font-family: sans-serif;
+  height: 125px;
+  background: white;
+  width: 95vw;
+  min-width: 950px;
+  border: 9px solid rgb(230, 230, 230);
+  border-radius: 0px;
+  background-color: rgb(255, 254, 253);
+  margin-top: 8px;
+  padding: 0px;
+  display: flex;
+  justify-content: center;
+  font-weight: 200;
+}
+#updateDateRange {
+  font-family: sans-serif;
+  background-color: #e6e6e6;
+  color: black;
+  font-size: 14px;
+  font-weight: 200;
 }
