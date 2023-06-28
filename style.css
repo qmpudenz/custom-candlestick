@@ -36,7 +36,7 @@
   display: flex;
   justify-content: space-evenly;
   margin-bottom: 20px;
-  height: 50px;
+  height: 59px;
   align-items: baseline;
 }
 
@@ -70,9 +70,13 @@
   margin: 4px;
   font-size: 20px;
   background: rgba(0, 0, 0, 0.79);
-  height: 100px;
+  height: 70px;
   display: flex;
   align-items: center;
+  width: 160px;
+  justify-content: center;
+  align-self: start;
+  min-width: 160px;
 }
 
 #fetchData:hover {
@@ -100,7 +104,7 @@
   border: 4px solid rgb(230, 230, 230);
   padding: 8px;
   font-family: sans-serif;
-  min-width: 300px;
+  min-width: 275px;
   font-size: 18px;
   width: fit-content;
   background: white;
@@ -132,21 +136,33 @@
 }
 
 body {
-  background: linear-gradient(to top, rgb(255, 255, 255), rgb(236, 233, 230));
+  background: #ece9e6; /* fallback for old browsers */
+  background: -webkit-linear-gradient(
+    to bottom,
+    #ffffff,
+    #ece9e6
+  ); /* Chrome 10-25, Safari 5.1-6 */
+  background: linear-gradient(
+    to bottom,
+    #ffffff,
+    #ece9e6
+  ); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
   display: flex;
   align-items: center;
   flex-direction: column;
+  min-width: 1000px;
 }
 
 #rangeMenu {
   display: flex;
   justify-content: center;
-  width: 600px;
+  /* width: 675px; */
   margin-left: 8px;
   align-items: center;
   background: white;
   border: 4px solid rgb(230, 230, 230);
   padding: 4px;
+  min-width: fit-content;
 }
 
 details {
@@ -166,7 +182,7 @@ summary {
 }
 
 #summarySmall {
-  width: 300px;
+  width: 275px;
 }
 
 summary::-webkit-details-marker {
@@ -211,9 +227,9 @@ summary::marker {
 #menuLeft {
   display: flex;
   flex-direction: column;
-  width: 80vw;
+  width: 90vw;
   min-width: 800px;
-  max-width: 900px;
+  max-width: 1000px;
 }
 
 #upperMenu {
@@ -243,7 +259,7 @@ summary::marker {
   padding: 4px;
   font-size: 16px;
   padding-left: 8px;
-  width: 175px;
+  width: 115px;
 }
 
 #console {
@@ -272,4 +288,22 @@ summary::marker {
   color: black;
   font-size: 14px;
   font-weight: 200;
+  width: 100px;
+}
+
+#startDate {
+  display: flex;
+}
+
+#endDate {
+  display: flex;
+}
+
+.timeInput {
+  font-family: sans-serif;
+  margin-right: 16px;
+  padding: 4px;
+  font-size: 16px;
+  padding-left: 8px;
+  width: 75px;
 }

@@ -14,14 +14,14 @@ app.use((req, res, next) => {
 // Serve static files from the public directory
 app.use(express.static("public"));
 
-// Define a GET route to fetch data from the server for a specific trader table and currency
-app.get("/data/:traderTable/:currency/:startDate/:endDate", (req, res) => {
-  const { traderTable, currency, startDate, endDate } = req.params;
+// Define a GET route to fetch data from the server for a specific trader table, currency, and range.
+app.get("/data/:traderTable/:currency/:startRange/:endRange", (req, res) => {
+  const { traderTable, currency, startRange, endRange } = req.params;
   fetchData(
     traderTable,
     currency,
-    startDate,
-    endDate,
+    startRange,
+    endRange,
     (data) => {
       res.json(data);
     },
@@ -32,16 +32,16 @@ app.get("/data/:traderTable/:currency/:startDate/:endDate", (req, res) => {
   );
 });
 
-// Define a GET route to fetch signals from the server for a specific trader table and currency
+// Define a GET route to fetch signals from the server for a specific trader table, currency, and range.
 app.get(
-  "/nashsignals/:traderTable/:currency/:startDate/:endDate",
+  "/nashsignals/:traderTable/:currency/:startRange/:endRange",
   (req, res) => {
-    const { traderTable, currency, startDate, endDate } = req.params;
+    const { traderTable, currency, startRange, endRange } = req.params;
     fetchSignals(
       traderTable,
       currency,
-      startDate,
-      endDate,
+      startRange,
+      endRange,
       (data) => {
         res.json(data);
       },

@@ -5,12 +5,12 @@ const cors = require("cors"); // CORS for cross-origin resource sharing
 
 // Initialize express app and port number
 const app = express();
-const port = 3003;
+const port = 3003; // We're defining port number for our server
 
-// Use CORS middleware
+// Use CORS middleware for enabling Cross-Origin Requests
 app.use(cors());
 
-// Set up database connection
+// Set up database connection with credentials
 const connection = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -18,33 +18,35 @@ const connection = mysql.createConnection({
   database: "candlestick_database",
 });
 
-// Connect to the database
+// Establish a connection with the database
 connection.connect((error) => {
   if (error) {
-    console.error("Error connecting to MySQL:", error);
+    console.error("Error connecting to MySQL:", error); // In case of an error, log it and return
     return;
   }
-  console.log("Connected to MySQL database!");
+  console.log("Connected to MySQL database!"); // If connection is successful, log the success message
 });
 
-// Function to fetch candlestick data from the database
-// Define a function 'fetchData'. This function accepts four parameters: the traderTable name, the currency to filter, a successCallback function, and an errorCallback function.
+// Function to fetch candlestick data from the database.
+// 'fetchData' function accepts a table name, a currency filter, a start and end range for the date and callback functions for handling success and error.
 function fetchData(
   traderTable,
   currency,
-  startDate,
-  endDate,
+  startRange,
+  endRange,
   successCallback,
   errorCallback
 ) {
+  // Defining the SQL query to be executed
   const query = `SELECT date_candle_started, open, high, low, close FROM ${traderTable} WHERE currency = ? AND date_candle_started BETWEEN ? AND ? ORDER BY date_candle_started ASC`;
-  const values = [currency, startDate, endDate];
+  const values = [currency, startRange, endRange];
 
+  // Executing the SQL query
   connection.query(query, values, function (error, results) {
     if (error) {
-      errorCallback(error);
+      errorCallback(error); // If there's an error, call the errorCallback
     } else {
-      // If there is no error, transform the results into formattedData. Each row is mapped into a new array containing date_candle_started and numerical values of low, open, close, and high.
+      // If there's no error, map through the results to format the data
       const formattedData = results.map((row) => {
         const { date_candle_started, low, open, close, high } = row;
         return [
@@ -61,21 +63,26 @@ function fetchData(
   });
 }
 
+// Function to fetch line data from the database.
+// 'fetchSignals function accepts a table name, a currency filter, a start and end range for the date and callback functions for handling success and error.
 function fetchSignals(
   traderTable,
   currency,
-  startDate,
-  endDate,
+  startRange,
+  endRange,
   successCallback,
   errorCallback
 ) {
+  // Defining the SQL query to be executed
   const query = `SELECT NashSignals.*, ind_signal.ind_signal FROM NashSignals JOIN ind_signal ON NashSignals.signal_type = ind_signal.id WHERE currency_id = ? AND date_started BETWEEN ? AND ? ORDER BY date_started ASC`;
-  const values = [currency, startDate, endDate];
+  const values = [currency, startRange, endRange];
 
+  // Executing the SQL query
   connection.query(query, values, function (error, results) {
     if (error) {
-      errorCallback(error);
+      errorCallback(error); // If there's an error, call the errorCallback
     } else {
+      // If there's no error, map through the results to format the data
       const formattedData = results.map((row) => {
         const { date_started, date_ended, indicator, ind_signal } = row;
         const indicatorSource = ind_signal;
@@ -87,6 +94,7 @@ function fetchSignals(
           indicatorSource,
         ];
       });
+      // After formatting the data, call the successCallback function with the formattedData as the argument.
       successCallback(formattedData);
     }
   });
@@ -94,40 +102,51 @@ function fetchSignals(
 
 // Function to fetch indicator data from the database
 function fetchIndicators(successCallback, errorCallback) {
+  // These variables will store the results of the database queries
   let indicatorSignalData;
   let currencyData;
   let indicatorPeriodData;
 
   // Nested queries to fetch indicatorSignalData, currencyData and indicatorPeriodData
+  // The first query fetches data from the 'ind_signal' table.
   connection.query("SELECT * FROM ind_signal", function (error, results) {
     if (error) {
+      // If there's an error, call the errorCallback
       errorCallback(error);
     } else {
+      // If there's no error, map through the results to create the 'indicatorSignalData' array
       indicatorSignalData = results.map((row) => {
         const { id, ind_signal } = row;
         return { id, ind_signal };
       });
 
+      // The second query fetches data from the 'currency' table. This query is nested within the first query's callback to ensure the queries are run in sequence.
       connection.query("SELECT * FROM currency", function (error, results) {
         if (error) {
+          // If there's an error, call the errorCallback
           errorCallback(error);
         } else {
+          // If there's no error, map through the results to create the 'currencyData' array
           currencyData = results.map((row) => {
             const { id, currency_name } = row;
             return [id, currency_name];
           });
 
+          // The third query fetches data from the 'ind_period' table. This query is nested within the second query's callback to ensure the queries are run in sequence.
           connection.query(
             "SELECT * FROM ind_period",
             function (error, results) {
               if (error) {
+                // If there's an error, call the errorCallback
                 errorCallback(error);
               } else {
+                // If there's no error, map through the results to create the 'indicatorPeriodData' array
                 indicatorPeriodData = results.map((row) => {
                   const { id, ind_period } = row;
                   return [id, ind_period];
                 });
 
+                // After all data has been fetched and formatted, call the successCallback function with the 'indicatorSignalData', 'currencyData', and 'indicatorPeriodData' as the arguments.
                 successCallback({
                   indicatorSignalData,
                   currencyData,
@@ -145,10 +164,11 @@ function fetchIndicators(successCallback, errorCallback) {
 // Export functions to be used elsewhere
 module.exports = { fetchData, fetchSignals, fetchIndicators };
 
-// Express route to handle /data requests
+// Defining an Express route to handle /data requests
 app.get("/data", (req, res) => {
   fetchData(
     (data) => {
+      // Preparing the data to be sent in the response
       const chartData = [["Day", "Low", "Open", "Close", "High"]];
       data.forEach((row) => {
         const { date_candle_started, low, open, close, high } = row;
@@ -156,17 +176,18 @@ app.get("/data", (req, res) => {
         chartData.push([date, low, open, close, high]);
       });
 
-      // Send candlestick data as JSON
+      // Sending the response with the candlestick data in JSON format
       res.json({ candlestickData: chartData });
     },
     (error) => {
       console.error(error);
+      // In case of error, send a 500 Internal Server Error response
       res.status(500).send("Internal Server Error");
     }
   );
 });
 
-// Start the server
+// Starting the Express server
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`Server running on port ${port}`); // Logging a message to indicate the server is running
 });

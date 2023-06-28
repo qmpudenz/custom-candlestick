@@ -31,20 +31,16 @@
 
           <div id="rangeMenu">
             <label class="dateLabel" for="startDate">Start:</label>
-            <input
-              class="dateInput"
-              type="datetime-local"
-              id="startDate"
-              name="startDate"
-            />
 
+            <div id="startDate" name="startDate">
+              <input class="dateInput" type="date" id="startDateInput" />
+              <input class="timeInput" type="time" id="startTimeInput" />
+            </div>
             <label class="dateLabel" for="endDate">End:</label>
-            <input
-              class="dateInput"
-              type="datetime-local"
-              id="endDate"
-              name="endDate"
-            />
+            <div id="endDate" name="endDate">
+              <input class="dateInput" type="date" id="endDateInput" />
+              <input class="timeInput" type="time" id="endTimeInput" />
+            </div>
 
             <button id="updateDateRange">Update Range</button>
           </div>
@@ -63,12 +59,9 @@
               <div id="indicatorFilter-checkbox-group"></div>
             </details>
           </div>
-        </div>
-      </div>
-      <div id="menuRight">
-        <div>
           <button id="fetchData">Fetch Data</button>
           <!-- Button for fetching new data -->
+          <div></div>
         </div>
       </div>
     </div>
