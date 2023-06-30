@@ -1,0 +1,4 @@
+.env
+config.js
+test.session.sql
+.vscode/settings.json

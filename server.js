@@ -2,20 +2,21 @@
 const express = require("express"); // Express.js for handling HTTP requests
 const mysql = require("mysql"); // MySQL to interact with the database
 const cors = require("cors"); // CORS for cross-origin resource sharing
+require("dotenv").config();
 
 // Initialize express app and port number
 const app = express();
-const port = 3003; // We're defining port number for our server
+const port = process.env.SERVER_PORT;
 
 // Use CORS middleware for enabling Cross-Origin Requests
 app.use(cors());
 
 // Set up database connection with credentials
 const connection = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "password",
-  database: "candlestick_database",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
 // Establish a connection with the database

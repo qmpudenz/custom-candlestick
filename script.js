@@ -46,12 +46,14 @@ async function fetchDataAndDrawChart(traderTable, currency) {
   try {
     // It fetches data from two separate endpoints.
     // One for fetching candlestick data and another one for fetching signals data.
+
+    let data;
     const response = await fetch(
-      `http://localhost:3002/data/${traderTable}/${currency}/${startRange}/${endRange}`
+      `${config.API_HOST}:${config.API_PORT}/data/${traderTable}/${currency}/${startRange}/${endRange}`
     );
     data = await response.json();
     const signalResponse = await fetch(
-      `http://localhost:3002/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
+      `${config.API_HOST}:${config.API_PORT}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
     );
     signalData = await signalResponse.json();
 
@@ -464,7 +466,10 @@ function drawChart(markLineDataFiltered) {
 // Function to fetch the list of available currency pairs
 async function fetchIndicators(successCallback, errorCallback) {
   try {
-    const response = await fetch("http://localhost:3002/currency");
+    const response = await fetch(
+      `${config.API_HOST}:${config.API_PORT}/currency`
+    );
+
     const data = await response.json();
     successCallback(data);
   } catch (error) {
@@ -489,7 +494,7 @@ async function populateIndicatorCheckboxGroup(
 ) {
   // Fetches signal data from the given endpoint with specified parameters.
   const signalResponse = await fetch(
-    `http://localhost:3002/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
+    `${config.API_HOST}:${config.API_PORT}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
   );
   const signalData = await signalResponse.json();
 
@@ -603,7 +608,7 @@ async function populateIndicatorFilterCheckboxGroup(
 ) {
   // Fetches signal data from the specified endpoint.
   const signalResponse = await fetch(
-    `http://localhost:3002/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
+    `${config.API_HOST}:${config.API_PORT}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
   );
   const signalData = await signalResponse.json();
 
@@ -981,7 +986,7 @@ let markLineData;
 // It ends by invoking calculateDataPoints itself.
 async function loadMarkLineData(traderTable, currency, startRange, endRange) {
   const signalResponse = await fetch(
-    `http://localhost:3002/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
+    `${config.API_HOST}:${config.API_PORT}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
   );
   markLineData = await signalResponse.json();
 
@@ -1117,3 +1122,5 @@ document.addEventListener("keydown", (event) => {
 document.getElementById("closeMessage").addEventListener("click", () => {
   document.getElementById("noDataMessage").style.display = "none";
 });
+
+import config from "./config.js"; // assuming config.js and script.js are in the same directory
