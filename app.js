@@ -1,10 +1,21 @@
 // Import necessary libraries and methods
 const express = require("express");
+const fs = require("fs");
 const { fetchData, fetchSignals, fetchIndicators } = require("./server");
 const app = express();
 
+const server = process.env.TESTING
+  ? app
+  : https.createServer(
+      {
+        key: fs.readFileSync(process.env.SSL_KEY_PATH),
+        cert: fs.readFileSync(process.env.SSL_CERT_PATH),
+      },
+      app
+    );
+
 // Enable CORS (Cross-Origin Resource Sharing) for all routes. This is required to allow requests from different origins.
-app.use((req, res, next) => {
+server.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -12,10 +23,10 @@ app.use((req, res, next) => {
 });
 
 // Serve static files from the public directory
-app.use(express.static("public"));
+server.use(express.static("public"));
 
 // Define a GET route to fetch data from the server for a specific trader table, currency, and range.
-app.get("/data/:traderTable/:currency/:startRange/:endRange", (req, res) => {
+server.get("/data/:traderTable/:currency/:startRange/:endRange", (req, res) => {
   const { traderTable, currency, startRange, endRange } = req.params;
   fetchData(
     traderTable,
@@ -33,7 +44,7 @@ app.get("/data/:traderTable/:currency/:startRange/:endRange", (req, res) => {
 });
 
 // Define a GET route to fetch signals from the server for a specific trader table, currency, and range.
-app.get(
+server.get(
   "/nashsignals/:traderTable/:currency/:startRange/:endRange",
   (req, res) => {
     const { traderTable, currency, startRange, endRange } = req.params;
@@ -54,7 +65,7 @@ app.get(
 );
 
 // Define a GET route to fetch indicators from the server
-app.get("/ind_signal", (req, res) => {
+server.get("/ind_signal", (req, res) => {
   fetchIndicators(
     (data) => {
       res.json(data.indicatorSignalData);
@@ -67,7 +78,7 @@ app.get("/ind_signal", (req, res) => {
 });
 
 // Define a GET route to fetch currencies from the server
-app.get("/currency", (req, res) => {
+server.get("/currency", (req, res) => {
   fetchIndicators(
     (data) => {
       res.json(data.currencyData);
@@ -80,6 +91,6 @@ app.get("/currency", (req, res) => {
 });
 
 // Start the server on port 3002
-app.listen(3002, () => {
+server.listen(3002, () => {
   console.log("Server is running on port 3002");
 });
