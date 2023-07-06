@@ -1,5 +1,6 @@
 // Import necessary libraries and methods
 const express = require("express");
+const https = require("https");
 const fs = require("fs");
 const { fetchData, fetchSignals, fetchIndicators } = require("./server");
 const app = express();
@@ -16,6 +17,7 @@ const server = app;
 //       },
 //       app
 //     );
+
 
 // Enable CORS (Cross-Origin Resource Sharing) for all routes. This is required to allow requests from different origins.
 server.use((req, res, next) => {
@@ -93,7 +95,9 @@ server.get("/currency", (req, res) => {
   );
 });
 
-// Start the server on port 3002
+
+// Start the server
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  
 });
