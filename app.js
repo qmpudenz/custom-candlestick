@@ -1,8 +1,11 @@
 // Import necessary libraries and methods
 const express = require("express");
+const https = require("https");
 const fs = require("fs");
 const { fetchData, fetchSignals, fetchIndicators } = require("./server");
 const app = express();
+
+const api_port = process.env.API_PORT;
 
 const server = process.env.TESTING
   ? app
@@ -90,7 +93,7 @@ server.get("/currency", (req, res) => {
   );
 });
 
-// Start the server on port 3002
-server.listen(3002, () => {
-  console.log("Server is running on port 3002");
+// Start the server on api port
+server.listen(api_port, () => {
+  console.log(`Server running on port ${api_port}`);
 });
