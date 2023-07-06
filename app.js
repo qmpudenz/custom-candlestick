@@ -3,16 +3,19 @@ const express = require("express");
 const fs = require("fs");
 const { fetchData, fetchSignals, fetchIndicators } = require("./server");
 const app = express();
+const PORT = process.env.PORT || 3002;
 
-const server = process.env.TESTING
-  ? app
-  : https.createServer(
-      {
-        key: fs.readFileSync(process.env.SSL_KEY_PATH),
-        cert: fs.readFileSync(process.env.SSL_CERT_PATH),
-      },
-      app
-    );
+const server = app;
+
+// const server = process.env.TESTING
+//   ? app
+//   : https.createServer(
+//       {
+//         key: fs.readFileSync(process.env.SSL_KEY_PATH),
+//         cert: fs.readFileSync(process.env.SSL_CERT_PATH),
+//       },
+//       app
+//     );
 
 // Enable CORS (Cross-Origin Resource Sharing) for all routes. This is required to allow requests from different origins.
 server.use((req, res, next) => {
@@ -91,6 +94,6 @@ server.get("/currency", (req, res) => {
 });
 
 // Start the server on port 3002
-server.listen(3002, () => {
-  console.log("Server is running on port 3002");
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
