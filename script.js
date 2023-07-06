@@ -49,11 +49,11 @@ async function fetchDataAndDrawChart(traderTable, currency) {
 
     let data;
     const response = await fetch(
-      `${config.API_HOST}:${config.API_PORT}/data/${traderTable}/${currency}/${startRange}/${endRange}`
+      `${config.API_HOST}/data/${traderTable}/${currency}/${startRange}/${endRange}`
     );
     data = await response.json();
     const signalResponse = await fetch(
-      `${config.API_HOST}:${config.API_PORT}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
+      `${config.API_HOST}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
     );
     signalData = await signalResponse.json();
 
@@ -467,7 +467,7 @@ function drawChart(markLineDataFiltered) {
 async function fetchIndicators(successCallback, errorCallback) {
   try {
     const response = await fetch(
-      `${config.API_HOST}:${config.API_PORT}/currency`
+      `${config.API_HOST}/currency`
     );
 
     const data = await response.json();
@@ -494,7 +494,7 @@ async function populateIndicatorCheckboxGroup(
 ) {
   // Fetches signal data from the given endpoint with specified parameters.
   const signalResponse = await fetch(
-    `${config.API_HOST}:${config.API_PORT}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
+    `${config.API_HOST}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
   );
   const signalData = await signalResponse.json();
 
@@ -608,7 +608,7 @@ async function populateIndicatorFilterCheckboxGroup(
 ) {
   // Fetches signal data from the specified endpoint.
   const signalResponse = await fetch(
-    `${config.API_HOST}:${config.API_PORT}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
+    `${config.API_HOST}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
   );
   const signalData = await signalResponse.json();
 
@@ -986,7 +986,7 @@ let markLineData;
 // It ends by invoking calculateDataPoints itself.
 async function loadMarkLineData(traderTable, currency, startRange, endRange) {
   const signalResponse = await fetch(
-    `${config.API_HOST}:${config.API_PORT}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
+    `${config.API_HOST}/nashsignals/${traderTable}/${currency}/${startRange}/${endRange}`
   );
   markLineData = await signalResponse.json();
 
