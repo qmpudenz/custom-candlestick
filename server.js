@@ -12,20 +12,12 @@ const port = process.env.SERVER_PORT;
 app.use(cors());
 
 // Set up database connection with credentials
-const connection = mysql.createConnection({
+const pool = mysql.createPool({
+  connectionLimit: 100,
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-});
-
-// Establish a connection with the database
-connection.connect((error) => {
-  if (error) {
-    console.error("Error connecting to MySQL:", error); // In case of an error, log it and return
-    return;
-  }
-  console.log("Connected to MySQL database!"); // If connection is successful, log the success message
 });
 
 // Function to fetch candlestick data from the database.
@@ -42,25 +34,33 @@ function fetchData(
   const query = `SELECT date_candle_started, open, high, low, close FROM ${traderTable} WHERE currency = ? AND date_candle_started BETWEEN ? AND ? ORDER BY date_candle_started ASC`;
   const values = [currency, startRange, endRange];
 
-  // Executing the SQL query
-  connection.query(query, values, function (error, results) {
-    if (error) {
-      errorCallback(error); // If there's an error, call the errorCallback
-    } else {
-      // If there's no error, map through the results to format the data
-      const formattedData = results.map((row) => {
-        const { date_candle_started, low, open, close, high } = row;
-        return [
-          date_candle_started,
-          parseFloat(low),
-          parseFloat(open),
-          parseFloat(close),
-          parseFloat(high),
-        ];
-      });
-      // After formatting the data, call the successCallback function with the formattedData as the argument.
-      successCallback(formattedData);
+  pool.getConnection((err, connection) => {
+    if (err) {
+      errorCallback(err);
+      return;
     }
+
+    // Executing the SQL query
+    connection.query(query, values, function (error, results) {
+      connection.release();
+      if (error) {
+        errorCallback(error); // If there's an error, call the errorCallback
+      } else {
+        // If there's no error, map through the results to format the data
+        const formattedData = results.map((row) => {
+          const { date_candle_started, low, open, close, high } = row;
+          return [
+            date_candle_started,
+            parseFloat(low),
+            parseFloat(open),
+            parseFloat(close),
+            parseFloat(high),
+          ];
+        });
+        // After formatting the data, call the successCallback function with the formattedData as the argument.
+        successCallback(formattedData);
+      }
+    });
   });
 }
 
@@ -79,25 +79,32 @@ function fetchSignals(
   const values = [currency, startRange, endRange];
 
   // Executing the SQL query
-  connection.query(query, values, function (error, results) {
-    if (error) {
-      errorCallback(error); // If there's an error, call the errorCallback
-    } else {
-      // If there's no error, map through the results to format the data
-      const formattedData = results.map((row) => {
-        const { date_started, date_ended, indicator, ind_signal } = row;
-        const indicatorSource = ind_signal;
-        const signal_type = indicator;
-        return [
-          new Date(date_started),
-          new Date(date_ended),
-          signal_type,
-          indicatorSource,
-        ];
-      });
-      // After formatting the data, call the successCallback function with the formattedData as the argument.
-      successCallback(formattedData);
+  pool.getConnection((err, connection) => {
+    if (err) {
+      errorCallback(err);
+      return;
     }
+    connection.query(query, values, function (error, results) {
+      connection.release(); // always release the connection after you're done
+      if (error) {
+        errorCallback(error); // If there's an error, call the errorCallback
+      } else {
+        // If there's no error, map through the results to format the data
+        const formattedData = results.map((row) => {
+          const { date_started, date_ended, indicator, ind_signal } = row;
+          const indicatorSource = ind_signal;
+          const signal_type = indicator;
+          return [
+            new Date(date_started),
+            new Date(date_ended),
+            signal_type,
+            indicatorSource,
+          ];
+        });
+        // After formatting the data, call the successCallback function with the formattedData as the argument.
+        successCallback(formattedData);
+      }
+    });
   });
 }
 
@@ -108,54 +115,64 @@ function fetchIndicators(successCallback, errorCallback) {
   let currencyData;
   let indicatorPeriodData;
 
-  // Nested queries to fetch indicatorSignalData, currencyData and indicatorPeriodData
-  // The first query fetches data from the 'ind_signal' table.
-  connection.query("SELECT * FROM ind_signal", function (error, results) {
-    if (error) {
-      // If there's an error, call the errorCallback
-      errorCallback(error);
+  // Get a new connection from the pool
+  pool.getConnection((err, connection) => {
+    if (err) {
+      errorCallback(err);
     } else {
-      // If there's no error, map through the results to create the 'indicatorSignalData' array
-      indicatorSignalData = results.map((row) => {
-        const { id, ind_signal } = row;
-        return { id, ind_signal };
-      });
-
-      // The second query fetches data from the 'currency' table. This query is nested within the first query's callback to ensure the queries are run in sequence.
-      connection.query("SELECT * FROM currency", function (error, results) {
+      // The first query fetches data from the 'ind_signal' table.
+      connection.query("SELECT * FROM ind_signal", function (error, results) {
         if (error) {
           // If there's an error, call the errorCallback
+          connection.release();
           errorCallback(error);
         } else {
-          // If there's no error, map through the results to create the 'currencyData' array
-          currencyData = results.map((row) => {
-            const { id, currency_name } = row;
-            return [id, currency_name];
+          // If there's no error, map through the results to create the 'indicatorSignalData' array
+          indicatorSignalData = results.map((row) => {
+            const { id, ind_signal } = row;
+            return { id, ind_signal };
           });
 
-          // The third query fetches data from the 'ind_period' table. This query is nested within the second query's callback to ensure the queries are run in sequence.
-          connection.query(
-            "SELECT * FROM ind_period",
-            function (error, results) {
-              if (error) {
-                // If there's an error, call the errorCallback
-                errorCallback(error);
-              } else {
-                // If there's no error, map through the results to create the 'indicatorPeriodData' array
-                indicatorPeriodData = results.map((row) => {
-                  const { id, ind_period } = row;
-                  return [id, ind_period];
-                });
+          // The second query fetches data from the 'currency' table. This query is nested within the first query's callback to ensure the queries are run in sequence.
+          connection.query("SELECT * FROM currency", function (error, results) {
+            if (error) {
+              // If there's an error, call the errorCallback
+              connection.release();
+              errorCallback(error);
+            } else {
+              // If there's no error, map through the results to create the 'currencyData' array
+              currencyData = results.map((row) => {
+                const { id, currency_name } = row;
+                return [id, currency_name];
+              });
 
-                // After all data has been fetched and formatted, call the successCallback function with the 'indicatorSignalData', 'currencyData', and 'indicatorPeriodData' as the arguments.
-                successCallback({
-                  indicatorSignalData,
-                  currencyData,
-                  indicatorPeriodData,
-                });
-              }
+              // The third query fetches data from the 'ind_period' table. This query is nested within the second query's callback to ensure the queries are run in sequence.
+              connection.query(
+                "SELECT * FROM ind_period",
+                function (error, results) {
+                  if (error) {
+                    // If there's an error, call the errorCallback
+                    connection.release();
+                    errorCallback(error);
+                  } else {
+                    // If there's no error, map through the results to create the 'indicatorPeriodData' array
+                    indicatorPeriodData = results.map((row) => {
+                      const { id, ind_period } = row;
+                      return [id, ind_period];
+                    });
+
+                    // After all data has been fetched and formatted, call the successCallback function with the 'indicatorSignalData', 'currencyData', and 'indicatorPeriodData' as the arguments.
+                    connection.release();
+                    successCallback({
+                      indicatorSignalData,
+                      currencyData,
+                      indicatorPeriodData,
+                    });
+                  }
+                }
+              );
             }
-          );
+          });
         }
       });
     }
